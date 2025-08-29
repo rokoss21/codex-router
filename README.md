@@ -67,6 +67,8 @@ Codex CLI supports [MCP servers](./docs/advanced.md#model-context-protocol-mcp).
 
 Codex CLI supports a rich set of configuration options, with preferences stored in `~/.codex/config.toml`. For full configuration options, see [Configuration](./docs/config.md).
 
+To use models from [OpenRouter](https://openrouter.ai), add a `[model_providers.openrouter]` section with a `models` list in `config.toml`, launch the CLI with `--provider openrouter`, and switch between those models at runtime with the `/models` command.
+
 ---
 
 ### Docs & FAQ

@@ -17,6 +17,10 @@ pub struct Cli {
     #[arg(long = "oss", default_value_t = false)]
     pub oss: bool,
 
+    /// Model provider id (e.g. "openai", "openrouter").
+    #[arg(long = "provider")]
+    pub provider: Option<String>,
+
     /// Select the sandbox policy to use when executing model-generated shell
     /// commands.
     #[arg(long = "sandbox", short = 's', value_enum)]
