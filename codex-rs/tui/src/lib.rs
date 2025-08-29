@@ -10,6 +10,7 @@ use codex_core::config::ConfigOverrides;
 use codex_core::config::ConfigToml;
 use codex_core::config::find_codex_home;
 use codex_core::config::load_config_as_toml_with_cli_overrides;
+use codex_core::config::set_model_provider_api_key;
 use codex_core::protocol::AskForApproval;
 use codex_core::protocol::SandboxPolicy;
 use codex_login::AuthManager;
@@ -109,7 +110,7 @@ pub async fn run_main(
     let model_provider_override = if cli.oss {
         Some(BUILT_IN_OSS_MODEL_PROVIDER_ID.to_owned())
     } else {
-        None
+        cli.provider.clone()
     };
 
     // canonicalize the cwd
@@ -154,6 +155,32 @@ pub async fn run_main(
             }
         }
     };
+
+    if config.model_provider.env_key.is_some()
+        && config.model_provider.api_key().ok().flatten().is_none()
+    {
+        #[allow(clippy::print_stderr)]
+        {
+            let prompt = format!("Enter API key for {}: ", config.model_provider.name);
+            match rpassword::prompt_password(prompt) {
+                Ok(key) => {
+                    if let Err(e) = set_model_provider_api_key(
+                        &config.codex_home,
+                        &config.model_provider_id,
+                        &key,
+                    ) {
+                        eprintln!("Failed to store API key: {e}");
+                    } else {
+                        config.model_provider.api_key = Some(key.clone());
+                        if let Some(p) = config.model_providers.get_mut(&config.model_provider_id) {
+                            p.api_key = Some(key);
+                        }
+                    }
+                }
+                Err(e) => eprintln!("Failed to read API key: {e}"),
+            }
+        }
+    }
 
     // we load config.toml here to determine project state.
     #[allow(clippy::print_stderr)]

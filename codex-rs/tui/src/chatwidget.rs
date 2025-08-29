@@ -785,7 +785,7 @@ impl ChatWidget {
                 self.clear_token_usage();
                 self.app_event_tx.send(AppEvent::CodexOp(Op::Compact));
             }
-            SlashCommand::Model => {
+            SlashCommand::Models => {
                 self.open_model_popup();
             }
             SlashCommand::Approvals => {
@@ -1074,9 +1074,42 @@ impl ChatWidget {
     pub(crate) fn open_model_popup(&mut self) {
         let current_model = self.config.model.clone();
         let current_effort = self.config.model_reasoning_effort;
-        let presets: &[ModelPreset] = builtin_model_presets();
 
         let mut items: Vec<SelectionItem> = Vec::new();
+        if let Some(models) = &self.config.model_provider.models {
+            for model_slug in models.iter() {
+                let name = model_slug.to_string();
+                let is_current = *model_slug == current_model;
+                let model_clone = model_slug.to_string();
+                let effort = current_effort;
+                let actions: Vec<SelectionAction> = vec![Box::new(move |tx| {
+                    tx.send(AppEvent::CodexOp(Op::OverrideTurnContext {
+                        cwd: None,
+                        approval_policy: None,
+                        sandbox_policy: None,
+                        model: Some(model_clone.clone()),
+                        effort: Some(effort),
+                        summary: None,
+                    }));
+                    tx.send(AppEvent::UpdateModel(model_clone.clone()));
+                })];
+                items.push(SelectionItem {
+                    name,
+                    description: None,
+                    is_current,
+                    actions,
+                });
+            }
+            self.bottom_pane.show_selection_view(
+                "Select model".to_string(),
+                Some("Choose model for this and future Codex CLI session".to_string()),
+                Some("Press Enter to confirm or Esc to go back".to_string()),
+                items,
+            );
+            return;
+        }
+
+        let presets: &[ModelPreset] = builtin_model_presets();
         for preset in presets.iter() {
             let name = preset.label.to_string();
             let description = Some(preset.description.to_string());

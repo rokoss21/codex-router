@@ -13,6 +13,7 @@ use codex_core::ConversationManager;
 use codex_core::NewConversation;
 use codex_core::config::Config;
 use codex_core::config::ConfigOverrides;
+use codex_core::config::set_model_provider_api_key;
 use codex_core::protocol::AskForApproval;
 use codex_core::protocol::Event;
 use codex_core::protocol::EventMsg;
@@ -38,6 +39,7 @@ pub async fn run_main(cli: Cli, codex_linux_sandbox_exe: Option<PathBuf>) -> any
         images,
         model: model_cli_arg,
         oss,
+        provider,
         config_profile,
         full_auto,
         dangerously_bypass_approvals_and_sandbox,
@@ -131,7 +133,7 @@ pub async fn run_main(cli: Cli, codex_linux_sandbox_exe: Option<PathBuf>) -> any
     let model_provider = if oss {
         Some(BUILT_IN_OSS_MODEL_PROVIDER_ID.to_string())
     } else {
-        None // No specific model provider override.
+        provider.clone()
     };
 
     // Load configuration and determine approval policy
@@ -162,7 +164,19 @@ pub async fn run_main(cli: Cli, codex_linux_sandbox_exe: Option<PathBuf>) -> any
         }
     };
 
-    let config = Config::load_with_cli_overrides(cli_kv_overrides, overrides)?;
+    let mut config = Config::load_with_cli_overrides(cli_kv_overrides, overrides)?;
+
+    if config.model_provider.env_key.is_some()
+        && config.model_provider.api_key().ok().flatten().is_none()
+    {
+        let prompt = format!("Enter API key for {}: ", config.model_provider.name);
+        let key = rpassword::prompt_password(prompt)?;
+        set_model_provider_api_key(&config.codex_home, &config.model_provider_id, &key)?;
+        config.model_provider.api_key = Some(key.clone());
+        if let Some(p) = config.model_providers.get_mut(&config.model_provider_id) {
+            p.api_key = Some(key);
+        }
+    }
     let mut event_processor: Box<dyn EventProcessor> = if json_mode {
         Box::new(EventProcessorWithJsonOutput::new(last_message_file.clone()))
     } else {

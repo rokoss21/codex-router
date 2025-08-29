@@ -314,13 +314,13 @@ pub(crate) fn new_session_info(
             ]),
             Line::from(vec![
                 Span::styled(
-                    " /model",
+                    " /models",
                     Style::default()
                         .add_modifier(Modifier::BOLD)
                         .fg(Color::White),
                 ),
                 Span::styled(
-                    format!(" - {}", SlashCommand::Model.description()),
+                    format!(" - {}", SlashCommand::Models.description()),
                     Style::default().dim(),
                 ),
             ]),

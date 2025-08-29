@@ -17,6 +17,10 @@ pub struct Cli {
     #[arg(long, short = 'm')]
     pub model: Option<String>,
 
+    /// Model provider id (e.g. "openai", "openrouter").
+    #[arg(long = "provider")]
+    pub provider: Option<String>,
+
     /// Convenience flag to select the local open source model provider.
     /// Equivalent to -c model_provider=oss; verifies a local Ollama server is
     /// running.

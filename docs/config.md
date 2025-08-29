@@ -92,6 +92,16 @@ http_headers = { "X-Example-Header" = "example-value" }
 # _if_ the environment variable is set and its value is non-empty.
 env_http_headers = { "X-Example-Features": "EXAMPLE_FEATURES" }
 ```
+```toml
+[model_providers.openrouter]
+name = "OpenRouter"
+base_url = "https://openrouter.ai/api/v1"
+env_key = "OPENROUTER_API_KEY"
+http_headers = { "HTTP-Referer" = "https://github.com/openai/codex", "X-Title" = "Codex" }
+models = ["openai/gpt-4o-mini", "anthropic/claude-3"]
+```
+
+Run the CLI with `--provider openrouter` and use the `/models` command to pick one of the entries listed above.
 
 ### Per-provider network tuning
 
@@ -587,10 +597,12 @@ Options that are specific to the TUI.
 | `model_providers.<id>.name` | string | Display name. |
 | `model_providers.<id>.base_url` | string | API base URL. |
 | `model_providers.<id>.env_key` | string | Env var for API key. |
+| `model_providers.<id>.api_key` | string | API key stored in config. |
 | `model_providers.<id>.wire_api` | `chat` | `responses` | Protocol used (default: `chat`). |
 | `model_providers.<id>.query_params` | map<string,string> | Extra query params (e.g., Azure `api-version`). |
 | `model_providers.<id>.http_headers` | map<string,string> | Additional static headers. |
 | `model_providers.<id>.env_http_headers` | map<string,string> | Headers sourced from env vars. |
+| `model_providers.<id>.models` | array<string> | Allowed model ids for `/models` selection. |
 | `model_providers.<id>.request_max_retries` | number | Per‑provider HTTP retry count (default: 4). |
 | `model_providers.<id>.stream_max_retries` | number | SSE stream retry count (default: 5). |
 | `model_providers.<id>.stream_idle_timeout_ms` | number | SSE idle timeout (ms) (default: 300000). |

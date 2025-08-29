@@ -49,6 +49,9 @@ pub struct ModelProviderInfo {
     /// Environment variable that stores the user's API key for this provider.
     pub env_key: Option<String>,
 
+    /// API key to use for this provider (takes precedence over `env_key`).
+    pub api_key: Option<String>,
+
     /// Optional instructions to help the user get a valid value for the
     /// variable and set it.
     pub env_key_instructions: Option<String>,
@@ -83,6 +86,10 @@ pub struct ModelProviderInfo {
     /// Whether this provider requires some form of standard authentication (API key, ChatGPT token).
     #[serde(default)]
     pub requires_openai_auth: bool,
+
+    /// Optional list of models that can be selected for this provider.
+    #[serde(default)]
+    pub models: Option<Vec<String>>,
 }
 
 impl ModelProviderInfo {
@@ -185,6 +192,11 @@ impl ModelProviderInfo {
     /// (and non-empty) in the environment. If `env_key` is required but
     /// cannot be found, returns an error.
     pub fn api_key(&self) -> crate::error::Result<Option<String>> {
+        if let Some(key) = &self.api_key {
+            if !key.trim().is_empty() {
+                return Ok(Some(key.clone()));
+            }
+        }
         match &self.env_key {
             Some(env_key) => {
                 let env_value = std::env::var(env_key);
@@ -255,6 +267,7 @@ pub fn built_in_model_providers() -> HashMap<String, ModelProviderInfo> {
                     .ok()
                     .filter(|v| !v.trim().is_empty()),
                 env_key: None,
+                api_key: None,
                 env_key_instructions: None,
                 wire_api: WireApi::Responses,
                 query_params: None,
@@ -279,6 +292,36 @@ pub fn built_in_model_providers() -> HashMap<String, ModelProviderInfo> {
                 stream_max_retries: None,
                 stream_idle_timeout_ms: None,
                 requires_openai_auth: true,
+                models: None,
+            },
+        ),
+        (
+            "openrouter",
+            P {
+                name: "OpenRouter".into(),
+                base_url: Some("https://openrouter.ai/api/v1".into()),
+                env_key: Some("OPENROUTER_API_KEY".into()),
+                api_key: None,
+                env_key_instructions: Some("Get your API key at https://openrouter.ai/keys".into()),
+                wire_api: WireApi::Chat,
+                query_params: None,
+                http_headers: Some(
+                    [
+                        (
+                            "HTTP-Referer".to_string(),
+                            "https://github.com/openai/codex".to_string(),
+                        ),
+                        ("X-Title".to_string(), "Codex".to_string()),
+                    ]
+                    .into_iter()
+                    .collect(),
+                ),
+                env_http_headers: None,
+                request_max_retries: None,
+                stream_max_retries: None,
+                stream_idle_timeout_ms: None,
+                requires_openai_auth: false,
+                models: None,
             },
         ),
         (BUILT_IN_OSS_MODEL_PROVIDER_ID, create_oss_provider()),
@@ -314,6 +357,7 @@ pub fn create_oss_provider_with_base_url(base_url: &str) -> ModelProviderInfo {
         name: "gpt-oss".into(),
         base_url: Some(base_url.into()),
         env_key: None,
+        api_key: None,
         env_key_instructions: None,
         wire_api: WireApi::Chat,
         query_params: None,
@@ -323,6 +367,7 @@ pub fn create_oss_provider_with_base_url(base_url: &str) -> ModelProviderInfo {
         stream_max_retries: None,
         stream_idle_timeout_ms: None,
         requires_openai_auth: false,
+        models: None,
     }
 }
 
